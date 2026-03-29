@@ -1,71 +1,81 @@
-# Codex Project Root Kit
+# Codex Project Control Plane Kit
 
-This repository is a private-first, single-project Codex root template.
+This repository is a private-first root kit for one project with multiple feature worktrees.
 
 The matching model-facing rules live in [AGENTS.md](AGENTS.md).
 
 ## Quick Use
 
-Use this kit when you want one project root to carry:
+Use this kit when you want:
 
-- a stable Codex runtime layer
-- a small manual workflow surface
-- durable task records
-- a layered capability catalog
-- a tiny project control-plane state
-- private human-learning notes
-- a neutral staging area for temporary inputs
+- one shared root for long-lived project knowledge
+- one feature branch per worktree under `features/`
+- shared task records, specs, dependencies, catalog, human-learning, and staging
+- feature-local execution sessions with isolated code state
 
-The recommended daily loop is:
+### Session Types
 
-1. Use `$project-manage` when you need to inspect project health, understand the current setup, get capability recommendations, or change the runtime layer or the capability catalog.
-2. Use `$open-task` when you start or resume real work.
-3. Do the work.
-4. Use `$close-task` when you stop so the task record stays resumable.
-5. Use `$learn` only when you explicitly want to preserve a reusable lesson or a human-improvement item.
+Use two session types on purpose.
 
-The core flow now uses internal helper scripts behind the skills for structured reads and precise updates. You still interact through the skills, not through new user-facing commands.
+#### Root session
 
-### Core Skills
+Start Codex at the root when you want to:
 
-| Skill | Use it for | Recommendation |
-| --- | --- | --- |
-| `$project-manage` | Project control plane: doctor, recommend, explain, bootstrap, repair, install, remove, promote | Use it when the question is about project capability or project health, not about task execution |
-| `$open-task` | Creating, resuming, or normalizing a task record | Use it whenever you re-enter a task after a pause or want to turn rough intent into a task |
-| `$close-task` | Updating task outcome and next step | Use it every time you stop working so the project stays resumable |
-| `$learn` | Capturing reusable skills or human-improvement items | Use it explicitly and selectively; most tasks do not need a learned artifact |
+- create or inspect feature branches and worktrees
+- inspect shared project state
+- manage shared capabilities
+- review shared specs, dependencies, catalog, human-learning, or staged input
 
-### Interaction Pattern
+Primary skill:
 
-All shipped workflow skills use the same interaction model:
+- `$project-manage`
 
-- If you invoke a skill with no instruction, it explains what it can do, recommends the most useful next step, and shows a few examples.
-- If you invoke a skill with an in-scope instruction, it starts that direction directly.
-- If the instruction is still in-scope but too vague, it keeps going and only asks for the missing high-impact detail.
-- If the instruction is out of scope, it tells you and points to the better skill instead of silently switching.
+Use it for feature lifecycle as well:
 
-The main difference is style:
+- create a feature branch + worktree
+- inspect feature status
+- close a feature as `merged` or `abandoned`
+- archive a finished feature
 
-- `$project-manage` and `$open-task` are more open-ended.
-- `$close-task` and `$learn` are more guided and stateful.
+#### Feature session
+
+Start a feature session from the root when you want to:
+
+- open or resume a task for that feature
+- implement code changes
+- close out task progress
+- capture explicit learning
+
+Primary skills:
+
+- `$open-task`
+- `$close-task`
+- `$learn`
+
+`$learn` may also run from the root when you want to review completed tasks and learn from their shared records and linked transcripts.
+
+Preferred entry:
+
+1. from the root, run `bin/xcode features/<feature-id>`
+2. if `bin/` is on your `PATH`, run `xcode features/<feature-id>`
+3. any extra arguments are forwarded to `codex`
+
+The launcher enters the shared root first and then runs Codex with relative paths:
+
+- `-C "features/<feature-id>"`
+- `--add-dir "."`
 
 ### Core Guidance
 
-- All shipped workflow skills are manual-only. Invoke them explicitly.
-- Treat task files under `.work/tasks/` as the main durable record of active work.
-- Treat catalog items under `.work/catalog/` as reusable capabilities, not as task notes.
-- Treat `.work/project-manage/state.toml` as the minimal memory of the operating layer, not as a report log.
-- Treat human-learning items under `.work/human-learning/items/` as a small active improvement queue.
-- Treat `.tmp/` as a neutral staging area, not as long-term memory.
-- Task records and human-learning items use TOML frontmatter so the helpers can filter and update them cheaply.
-- If staged material does not have an obvious destination, ask the model to suggest or confirm the best durable location before writing.
-- After successful processing and confirmation, clean processed originals out of `.tmp/`.
-
-### Git Recommendation
-
-This repository tracks the baseline itself because it is the source template.
-
-In a real project checkout that uses this structure, the same paths should usually stay local-only. Use [project-local-exclude.example](project-local-exclude.example) as the source for `.git/info/exclude` in the real project checkout instead of modifying the team repo's tracked `.gitignore`.
+- Root is the shared control plane.
+- `features/<feature-id>/` is the execution workspace for one feature branch.
+- Every task belongs to exactly one feature.
+- Root does not host task lifecycle.
+- `open-task` and `close-task` should be used only from inside a feature worktree.
+- `learn` may be used from either root or a feature worktree.
+- Shared long-lived material stays outside feature worktrees.
+- `.tmp/` is a shared flat staging area.
+- `bin/xcode` is the standard launcher for feature sessions.
 
 ## Design Notes
 
@@ -73,195 +83,187 @@ In a real project checkout that uses this structure, the same paths should usual
 
 ```text
 workspace/
+├── bin/
+│   └── xcode                  # feature session launcher
+├── features/
+│   └── <feature-id>/          # git worktree
 ├── .tmp/
-├── .agents/skills/
-│   └── _shared/
-├── .codex/
-│   ├── config.toml
-│   ├── agents/
-│   └── rules/
+├── .agents/skills/            # shared skill source for root + feature shells
+├── .codex/                    # root control-plane runtime
 ├── .work/
+│   ├── features/
+│   │   └── <feature-id>/
+│   │       ├── feature.toml
+│   │       └── tasks/
+│   ├── specs/
+│   ├── dependencies/
 │   ├── catalog/
-│   ├── project-manage/
 │   ├── human-learning/
-│   └── tasks/
+│   └── project-manage/
+│       └── rule-candidates/
 ├── AGENTS.md
 ├── README.md
 └── project-local-exclude.example
 ```
 
-### Core Model
+### Shared Control Plane
 
-The design separates the project root into three kinds of state:
+The root shared layer owns all long-lived non-code state:
 
-- root runtime state
-- private durable working state
-- temporary staged input
+- feature metadata
+- feature-scoped task records
+- shared specs
+- cross-feature dependency material
+- shared capability catalog
+- shared human-learning items
+- shared staged input
+- root project-manage state
 
-The root runtime state is what Codex should actively use while operating in the project:
+This makes paths stable and allows multiple feature branches to reference the same durable material.
+
+### Feature Worktrees
+
+Each feature is exactly one:
+
+- feature id
+- branch
+- git worktree
+
+The worktree under `features/<feature-id>/` is the execution space for that feature.
+In shared metadata, keep the worktree path relative to the shared root:
+
+- `features/<feature-id>`
+
+The standard way to enter that execution space is:
+
+- `bin/xcode features/<feature-id>`
+- or `xcode features/<feature-id>` when `bin/` is on `PATH`
+
+That launcher keeps the Codex-facing paths relative by running from the shared root and using:
+
+- `-C "features/<feature-id>"`
+- `--add-dir "."`
+
+It should contain a local runtime shell because Codex discovers runtime instructions and repo skills from the current working root:
 
 - `AGENTS.md`
 - `.agents/skills/`
-- `.agents/skills/_shared/`
-- `.codex/config.toml`
-- `.codex/agents/`
-- `.codex/rules/`
+- `.codex/`
 
-The private durable working state lives under `.work/`:
+Shared skills should be exposed into each feature worktree through local discoverable entries that point back to the shared skill source.
 
-- `.work/tasks/` for task records
-- `.work/catalog/` for reusable capabilities and active inventory
-- `.work/project-manage/` for minimal project control-plane state
-- `.work/human-learning/` for private improvement material
+### Feature Metadata And Tasks
 
-The temporary staged input lives under `.tmp/`:
+Shared feature metadata lives at:
 
-- it is only for files you explicitly want the model to inspect or organize
-- it is not durable knowledge
-- it is not owned by any single skill
+- `.work/features/<feature-id>/feature.toml`
 
-### Why The Workflow Is Small
+Shared feature tasks live at:
 
-The workflow surface is intentionally narrow.
+- `.work/features/<feature-id>/tasks/YYYY-MM-DD-task-slug.md`
 
-`$project-manage`, `$open-task`, and `$close-task` cover the main project loop. `$learn` exists for deliberate reflection, not for everyday mandatory use.
+This split is deliberate:
 
-This keeps the operating model clear:
+- task lifecycle happens inside the feature worktree
+- durable task truth lives in the shared root layer
 
-- `project-manage` manages project capability and project health
-- `open-task` starts or resumes work
-- `close-task` preserves work state
-- `learn` preserves lessons
+That gives you isolated execution with shared long-term records.
 
-The intended boundary is:
+Feature metadata should keep lifecycle status explicit. Suggested statuses are:
 
-- `project-manage` handles project-level setup and explanation
-- `open-task` and `close-task` handle task lifecycle
-- execution work happens between them
-- `learn` stays explicit and separate from routine task flow
+- `active`
+- `blocked`
+- `merged`
+- `abandoned`
+- `archived`
 
-### Task Design
+Closing or archiving a feature should update `feature.toml`. It should not delete the shared feature record or shared task history.
 
-Task files are the only durable record of active work.
+### Runtime And Capability Management
 
-Each task lives at:
+`$project-manage` owns:
 
-- `.work/tasks/YYYY-MM-DD-task-slug.md`
+- feature creation
+- branch/worktree creation
+- root capability inspection
+- root capability installation and repair
+- feature/worktree explanation
 
-Each task uses TOML frontmatter and a stable section order so sessions can resume cleanly without inventing extra state files or generic planning documents.
+It does not own task execution.
+It is a root-only skill and should refuse to run from inside a feature worktree.
 
-The frontmatter holds fast-to-read routing fields such as:
+It does own feature lifecycle, including feature closure and archive state.
 
-- status
-- summary
-- next action
-- tags
-- related paths
+### Task Lifecycle
 
-The body still carries the human-readable task content. The internal helpers only own frontmatter and selected fixed sections. They do not replace model judgment.
+`$open-task` and `$close-task` are feature-worktree-only skills.
 
-Closed tasks remain in `.work/tasks/`; closure is represented in metadata and `Final Outcome`, not by moving files elsewhere.
+They should:
 
-### Catalog Design
+- determine the current feature from the current path
+- resolve the matching shared task directory
+- read and write only that feature’s tasks
+- refuse to operate when started from root
+- refuse to operate on a task that belongs to a different feature
 
-The capability catalog under `.work/catalog/` is layered by trust:
+Task metadata also keeps:
 
-- `external`
-- `learned`
-- `validated`
+- learning state
+- learning references
+- session references
 
-Its purpose is to separate reusable capability sources from the active runtime layer.
+This allows root-side learning to work from completed tasks without guessing blindly.
 
-Active installed items live in standard root locations. Catalog items remain source material until intentionally materialized.
+### Shared Staging
 
-`active.yaml` tracks only catalog-managed active items. It does not track the baseline workflow skills that ship with this root.
+`.tmp/` is shared and flat.
 
-The catalog intentionally keeps sidecar YAML metadata. It does not use frontmatter.
+Use it for:
 
-### Project Runtime State Design
+- incoming notes
+- raw documents
+- capability sources
+- reference bundles
 
-`$project-manage` also owns a very small state file under:
+Do not treat it as durable knowledge, and do not proactively scan it.
 
-- `.work/project-manage/state.toml`
+### Human Learning And Catalog
 
-This state is intentionally separate from the catalog inventory.
+Human-learning items and catalog items remain shared at root:
 
-Its purpose is to remember a few control-plane facts:
+- `.work/human-learning/`
+- `.work/catalog/`
 
-- which runtime model this project root follows
-- which baseline revision it was last aligned to
-- when the runtime layer was initialized
-- when the last runtime-layer change happened
-- what the last runtime-layer change was
+This keeps reusable knowledge from fragmenting across feature branches.
 
-It is not a doctor log, recommendation log, or full audit trail.
+### Root-Side Learning
 
-This split is intentional:
+`$learn` may run at root when you want to learn from completed feature work after the implementation session is over.
 
-- `.work/catalog/active.yaml` answers: what catalog-managed capabilities are active
-- `.work/project-manage/state.toml` answers: what minimal runtime-layer state this project root is in
+In that mode it should:
 
-### Human-Learning Design
+- select a completed task that is still pending learning
+- read the task record first
+- resolve related transcripts from the Codex session store using task-linked session refs when available
+- fall back to inferred session candidates only when explicit links are missing
+- write outputs to shared durable locations
 
-Human-learning items live under:
+Possible outputs are:
 
-- `.work/human-learning/items/`
-
-They are private working material, not active runtime capabilities.
-
-Their job is to capture:
-
-- alignment problems
-- repeated blockers
-- behaviors to improve
-- successful collaboration patterns worth reinforcing
-
-They are intentionally separate from learned skills because a personal improvement topic is not always the same thing as a reusable Codex skill.
-
-Human-learning items also use TOML frontmatter so the helpers can update streaks and status without rewriting the full item.
-
-### Temporary Staging Design
-
-`.tmp/` exists so temporary source material has a clear place.
-
-Typical staged inputs include:
-
-- skill packs
-- loose capability files
-- raw notes
-- reference folders
-- documents that should be normalized into another durable location
-
-The model should not proactively scan `.tmp/`. When you explicitly reference staged material, the model should first decide or confirm where it belongs:
-
-- a catalog item
-- a task update
+- a learned skill
 - a human-learning item
-- a project file update
-- or no durable write at all
+- a project rule candidate
 
-If the destination is unclear, the model should ask. If processing succeeds and you confirm the change, the staged original should be cleaned up.
+### Git Recommendation
 
-### Shared Helper Design
+This repository tracks the baseline because it is the maintained source template.
 
-The shared helper layer under `.agents/skills/_shared/` exists for two narrow reasons:
+In a real project checkout:
 
-- metadata-first loading
-- deterministic partial updates
+- use [project-local-exclude.example](project-local-exclude.example) for the root control plane
+- let `$project-manage` provision each feature worktree's local ignore rules for:
+  - `/AGENTS.md`
+  - `/.agents/`
+  - `/.codex/`
 
-It currently supports only the core flow:
-
-- `$open-task`
-- `$close-task`
-- `$learn`
-
-The helpers are implementation detail, not a second user workflow. When Python is unavailable or a helper fails, the model should fall back to the same documented file contracts and edit manually.
-
-### Why Git Behavior Is Split
-
-There are two different contexts:
-
-1. This repository is the maintained source template, so baseline files are tracked here.
-2. A real project checkout uses the same structure as local operating state, so those files should usually remain untracked there.
-
-That is why this repository includes the baseline structure directly, while real project checkouts should normally rely on local excludes.
+That keeps the private runtime shell and shared control-plane files local by default.

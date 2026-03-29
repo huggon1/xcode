@@ -7,16 +7,19 @@ from pathlib import Path
 from typing import Any
 
 from _recordlib import (
+    current_codex_session_id,
+    find_feature_context,
     first_nonempty_line,
     load_json_file,
     now_iso,
     parse_markdown_record,
     print_output,
+    resolve_shared_root_relative,
     write_markdown_record,
 )
 
 
-TASK_DIR = Path(".work/tasks")
+TASK_DIR = Path(".work/features")
 TASK_SECTION_ORDER = [
     "Goal",
     "Out of Scope",
@@ -31,7 +34,9 @@ TASK_SECTION_ORDER = [
 ]
 TASK_METADATA_ORDER = [
     "id",
+    "feature_id",
     "status",
+    "learning_status",
     "created",
     "updated",
     "closed",
@@ -40,17 +45,45 @@ TASK_METADATA_ORDER = [
     "tags",
     "related_paths",
     "source_refs",
+    "learning_refs",
+    "session_refs",
     "summary",
     "next_action",
 ]
 VALID_STATUS = {"planned", "active", "blocked", "done", "dropped"}
+VALID_LEARNING_STATUS = {"pending", "captured", "dropped"}
+
+
+def infer_feature_id_from_task_path(path: Path) -> str:
+    try:
+        parts = path.parts
+        index = parts.index("features")
+        if len(parts) > index + 2 and parts[index + 2] == "tasks":
+            return parts[index + 1]
+    except ValueError:
+        return ""
+    return ""
+
+
+def resolve_task_root(root_arg: str | None, feature_id_arg: str | None, start: Path | None = None) -> Path:
+    if root_arg:
+        return Path(root_arg)
+
+    start_path = start or Path.cwd()
+    if feature_id_arg:
+        return resolve_shared_root_relative(Path(".work/features") / feature_id_arg / "tasks", start_path)
+
+    context = find_feature_context(start_path)
+    return Path(context["shared_root"]) / ".work" / "features" / context["feature_id"] / "tasks"
 
 
 def default_task_metadata(path: Path) -> dict[str, Any]:
     timestamp = now_iso()
     return {
         "id": path.stem,
+        "feature_id": infer_feature_id_from_task_path(path),
         "status": "active",
+        "learning_status": "pending",
         "created": timestamp,
         "updated": timestamp,
         "closed": "",
@@ -59,9 +92,18 @@ def default_task_metadata(path: Path) -> dict[str, Any]:
         "tags": [],
         "related_paths": [],
         "source_refs": [],
+        "learning_refs": [],
+        "session_refs": [],
         "summary": "",
         "next_action": "",
     }
+
+
+def try_current_feature_id() -> str:
+    try:
+        return str(find_feature_context(Path.cwd())["feature_id"])
+    except FileNotFoundError:
+        return ""
 
 
 def list_task_files(root: Path) -> list[Path]:
@@ -90,10 +132,23 @@ def normalize_task_metadata(
 
     if metadata["status"] not in VALID_STATUS:
         raise ValueError(f"Invalid task status: {metadata['status']}")
+    if metadata.get("learning_status") not in VALID_LEARNING_STATUS:
+        raise ValueError(f"Invalid task learning status: {metadata.get('learning_status')}")
 
     metadata["tags"] = list(metadata.get("tags") or [])
     metadata["related_paths"] = list(metadata.get("related_paths") or [])
     metadata["source_refs"] = list(metadata.get("source_refs") or [])
+    metadata["learning_refs"] = list(metadata.get("learning_refs") or [])
+    metadata["session_refs"] = list(metadata.get("session_refs") or [])
+
+    feature_context_id = try_current_feature_id()
+    current_session_id = current_codex_session_id()
+    if current_session_id and feature_context_id and metadata.get("feature_id") == feature_context_id:
+        if current_session_id not in metadata["session_refs"]:
+            metadata["session_refs"].append(current_session_id)
+
+    if metadata["learning_refs"] and metadata.get("learning_status") == "pending":
+        metadata["learning_status"] = "captured"
 
     if touch_updated or not metadata.get("updated"):
         metadata["updated"] = now_iso()
@@ -140,7 +195,9 @@ def record_summary(path: Path) -> dict[str, Any]:
     return {
         "path": str(path),
         "title": record["title"] or path.stem,
+        "feature_id": metadata.get("feature_id", infer_feature_id_from_task_path(path)),
         "status": metadata.get("status", ""),
+        "learning_status": metadata.get("learning_status", ""),
         "updated": metadata.get("updated", ""),
         "priority": metadata.get("priority", ""),
         "task_type": metadata.get("task_type", ""),
@@ -148,11 +205,25 @@ def record_summary(path: Path) -> dict[str, Any]:
         "next_action": metadata.get("next_action", ""),
         "tags": metadata.get("tags", []),
         "related_paths": metadata.get("related_paths", []),
+        "learning_refs": metadata.get("learning_refs", []),
+        "session_refs": metadata.get("session_refs", []),
     }
 
 
+def all_feature_task_files(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    return sorted(
+        [
+            path
+            for path in root.glob("*/tasks/*.md")
+            if path.name != "README.md"
+        ]
+    )
+
+
 def command_list(args: argparse.Namespace) -> None:
-    root = Path(args.root)
+    root = resolve_task_root(args.root, args.feature_id)
     items: list[dict[str, Any]] = []
     for path in list_task_files(root):
         summary = record_summary(path)
@@ -161,6 +232,8 @@ def command_list(args: argparse.Namespace) -> None:
         if args.tag and not set(args.tag).issubset(set(summary["tags"])):
             continue
         if args.task_type and summary["task_type"] != args.task_type:
+            continue
+        if args.learning_status and summary["learning_status"] not in args.learning_status:
             continue
         if args.query:
             haystack = " ".join(
@@ -185,7 +258,38 @@ def command_list(args: argparse.Namespace) -> None:
         return
 
     for item in items:
-        print(f"{item['path']} | {item['status']} | {item['updated']} | {item['title']} | {item['next_action']}")
+        print(
+            f"{item['path']} | feature={item['feature_id']} | {item['status']} | "
+            f"learning={item['learning_status']} | {item['updated']} | {item['title']} | {item['next_action']}"
+        )
+
+
+def command_learning_candidates(args: argparse.Namespace) -> None:
+    root = Path(args.root or ".work/features")
+    items: list[dict[str, Any]] = []
+    for path in all_feature_task_files(root):
+        summary = record_summary(path)
+        if summary["status"] not in set(args.status):
+            continue
+        if summary["learning_status"] not in set(args.learning_status):
+            continue
+        if args.feature_id and summary["feature_id"] != args.feature_id:
+            continue
+        items.append(summary)
+
+    items.sort(key=lambda item: item.get("updated", ""), reverse=True)
+    if args.limit:
+        items = items[: args.limit]
+
+    if args.format == "json":
+        print_output(items, "json")
+        return
+
+    for item in items:
+        print(
+            f"{item['path']} | feature={item['feature_id']} | {item['status']} | "
+            f"learning={item['learning_status']} | {item['updated']} | {item['title']}"
+        )
 
 
 def command_read(args: argparse.Namespace) -> None:
@@ -270,15 +374,49 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Structured task record helper.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    context_parser = subparsers.add_parser("context", help="Resolve the current feature context and shared task root.")
+    context_parser.add_argument("--format", choices=("text", "json"), default="json")
+    context_parser.set_defaults(
+        func=lambda args: print_output(
+            {
+                **find_feature_context(Path.cwd()),
+                "task_root": str(resolve_task_root(None, None)),
+            },
+            args.format,
+        )
+    )
+
     list_parser = subparsers.add_parser("list", help="List task records using metadata-first filters.")
-    list_parser.add_argument("--root", default=str(TASK_DIR))
+    list_parser.add_argument("--root")
+    list_parser.add_argument("--feature-id")
     list_parser.add_argument("--status", action="append")
     list_parser.add_argument("--tag", action="append")
     list_parser.add_argument("--task-type")
+    list_parser.add_argument("--learning-status", action="append")
     list_parser.add_argument("--query")
     list_parser.add_argument("--limit", type=int)
     list_parser.add_argument("--format", choices=("text", "json"), default="text")
     list_parser.set_defaults(func=command_list)
+
+    learning_candidates_parser = subparsers.add_parser(
+        "learning-candidates",
+        help="List completed feature tasks that are still pending learning.",
+    )
+    learning_candidates_parser.add_argument("--root")
+    learning_candidates_parser.add_argument("--feature-id")
+    learning_candidates_parser.add_argument(
+        "--status",
+        action="append",
+        default=["done"],
+    )
+    learning_candidates_parser.add_argument(
+        "--learning-status",
+        action="append",
+        default=["pending"],
+    )
+    learning_candidates_parser.add_argument("--limit", type=int)
+    learning_candidates_parser.add_argument("--format", choices=("text", "json"), default="text")
+    learning_candidates_parser.set_defaults(func=command_learning_candidates)
 
     read_parser = subparsers.add_parser("read", help="Read one task record.")
     read_parser.add_argument("--path", required=True)

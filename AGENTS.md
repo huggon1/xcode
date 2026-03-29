@@ -1,80 +1,71 @@
-# Single-Project Codex Guide
+# Project Control Plane Guide
 
 ## Scope
 
-- This directory is the maintained, reusable single-project Codex root.
-- Treat the root as one project workspace, not as a multi-project control plane.
+- This root is the shared control plane for one project with multiple feature worktrees.
+- Treat `features/<feature-id>/` as execution workspaces, not as copied projects.
 
 ## Core Layout
 
-- `AGENTS.md` is the root instruction file for this project.
-- `.agents/skills/` stores active project skills.
-- `.codex/` stores active project config, subagents, and rules.
-- `.work/tasks/` stores durable task records.
+- `features/` stores git worktrees, one per feature branch.
+- `.work/features/` stores shared feature metadata and shared task records.
+- `.work/specs/` stores long-lived shared specs.
+- `.work/dependencies/` stores shared cross-feature dependency notes when metadata alone is not enough.
 - `.work/catalog/` stores reusable capability sources and active inventory.
-- `.work/project-manage/` stores the minimal project control-plane state.
-- `.work/human-learning/` stores private human improvement material.
-- `.agents/skills/_shared/` stores helper infrastructure shared by multiple workflow skills.
-- `.tmp/` stores temporary user-provided files waiting to be processed.
+- `.work/human-learning/` stores shared private human improvement material.
+- `.work/project-manage/` stores the minimal root control-plane state.
+- `.work/project-manage/rule-candidates/` stores candidate project rules that are not active yet.
+- `.tmp/` stores shared staged input.
+- Root `.agents/skills/` is the shared skill source for this control plane.
 
 ## Primary Interface
 
-- Prefer these skills as the main workflow surface:
-  - `$project-manage`
-  - `$open-task`
-  - `$close-task`
-- `$learn` is an optional manual learning skill.
-- These shipped workflow skills are manual-only and should not be implicitly invoked.
-- Treat the files as the durable source of truth and the skills as guided entrypoints.
-- Workflow skills follow one interaction protocol:
-  - if invoked without an instruction, explain what the skill can do, recommend the most useful next step, and show a few concrete examples
-  - if invoked with an in-scope instruction, start that direction immediately
-  - if invoked with an ambiguous but in-scope instruction, continue with the most likely intent and ask only for the missing high-impact detail
-  - if invoked with an out-of-scope instruction, say so clearly and point to the better skill instead of silently switching
+- At root, use `$project-manage` as the main workflow surface.
+- `$project-manage` is root-only and should refuse to run from inside feature worktrees.
+- `$open-task` and `$close-task` are feature-worktree skills, not root skills.
+- `$learn` may be used from root or feature worktrees and writes to shared durable locations.
+- All shipped workflow skills are manual-only and must not be implicitly invoked.
 
 ## Read Order
 
-- Start here for root-level behavior.
-- For task-file structure and rules, read [.work/tasks/README.md](.work/tasks/README.md).
-- For catalog structure and runtime materialization rules, read [.work/catalog/README.md](.work/catalog/README.md).
-- For project runtime state rules, read [.work/project-manage/README.md](.work/project-manage/README.md).
-- For human-learning item rules, read [.work/human-learning/README.md](.work/human-learning/README.md).
-- For shared helper scripts and fallback behavior, read [.agents/skills/_shared/README.md](.agents/skills/_shared/README.md).
-- For staged input behavior, read [.tmp/README.md](.tmp/README.md).
-- Load deeper project files only when the current task actually needs them.
+- Start here for root behavior.
+- For feature/worktree rules, read [features/README.md](features/README.md).
+- For shared feature metadata and task rules, read [.work/features/README.md](.work/features/README.md).
+- For shared specs, read [.work/specs/README.md](.work/specs/README.md).
+- For shared dependency notes, read [.work/dependencies/README.md](.work/dependencies/README.md).
+- For catalog rules, read [.work/catalog/README.md](.work/catalog/README.md).
+- For human-learning rules, read [.work/human-learning/README.md](.work/human-learning/README.md).
+- For project control-plane state, read [.work/project-manage/README.md](.work/project-manage/README.md).
+- For project rule candidates, read [.work/project-manage/rule-candidates/README.md](.work/project-manage/rule-candidates/README.md).
+- For shared helper behavior, read [.agents/skills/_shared/README.md](.agents/skills/_shared/README.md).
+- For staged input rules, read [.tmp/README.md](.tmp/README.md).
 
 ## High-Priority Rules
 
 - `README.md` files are human-facing; `AGENTS.md` files are model-facing.
-- Do not invent generic docs, templates, plans, registries, or archive folders for this baseline.
-- Keep active runtime capabilities in standard root paths:
-  - skills under `.agents/skills/`
-  - subagents under `.codex/agents/`
-  - config in `.codex/config.toml`
-  - rules under `.codex/rules/`
-- `project-manage` is the only project-level capability-management entrypoint.
-- Treat `project-manage` as the project control plane:
-  - health checking
-  - capability recommendations
-  - explaining the current setup
-  - installing, removing, promoting, importing, repairing, or bootstrapping capabilities
-- Keep project control-plane state small and separate:
-  - `.work/catalog/active.yaml` tracks catalog-managed active items
-  - `.work/project-manage/state.toml` tracks minimal operating-layer state
-- Task files under `.work/tasks/` are the main durable record of active work.
-- Catalog items under `.work/catalog/` are source material until intentionally materialized into the runtime layer.
-- Human-learning items under `.work/human-learning/` are private working material, not active project capabilities.
-- For structured task and human-learning operations, prefer the shared helpers under `.agents/skills/_shared/` when available.
-- If a helper is unavailable or fails, follow the same contracts manually instead of changing the file shape.
-- `.tmp/` is temporary staging, not durable project knowledge.
-- Do not proactively scan `.tmp/` unless the user points to it or asks to organize staged material.
-- When staged material is referenced and the destination is not obvious, determine or confirm the best durable destination first.
-- Clean processed originals out of `.tmp/` only after successful processing, preview, and confirmation.
+- Root owns shared control-plane state. Feature worktrees own code execution only.
+- `project-manage` is the only root-level feature and capability management entrypoint.
+- `project-manage` also owns feature close/archive lifecycle at the shared root.
+- Keep `feature.toml.worktree_path` shared-root-relative, for example `features/<feature-id>`.
+- `open-task` and `close-task` should refuse to run from root.
+- `learn` may run from root to learn from completed feature tasks and related transcripts.
+- Every task belongs to exactly one feature.
+- Store task records only under `.work/features/<feature-id>/tasks/`.
+- Do not recreate a root-level global `.work/tasks/` pool.
+- Keep long-lived non-code project material in the shared root layer, not inside feature worktrees.
+- Feature worktrees still need a local runtime shell:
+  - `AGENTS.md`
+  - `.agents/skills/`
+  - `.codex/`
+- Do not create feature-local `.tmp/`; `.tmp/` belongs to the shared root only.
+- Shared skills should be exposed into each feature worktree through local discoverable entries.
+- Catalog and human-learning data are shared across features at the root layer.
+- `.tmp/` is shared, flat staging. Do not proactively scan it.
 - Keep this operating layer private by default unless the user explicitly asks to prepare shared versions.
 
 ## Done Means
 
-- The root remains a minimal single-project baseline.
-- The workflow skills and the referenced contract files stay aligned.
-- Task records remain compact and resumable.
-- The catalog stays separate from the active runtime layer.
+- Root remains the shared control plane.
+- Feature worktrees remain isolated execution spaces.
+- Task records remain shared, feature-scoped, and resumable.
+- Shared long-lived knowledge stays outside feature worktrees.

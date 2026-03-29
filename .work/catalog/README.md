@@ -1,6 +1,6 @@
 # Capability Catalog
 
-The catalog stores reusable capability sources and the inventory of catalog-managed active items.
+The catalog stores reusable capability sources and the inventory of catalog-managed active items for the shared root layer.
 
 ## Structure
 
@@ -83,7 +83,7 @@ It also does not track the control-plane state owned by `$project-manage`.
 
 ## Runtime Relationship
 
-Catalog items are source material.
+Catalog items are shared source material.
 
 Catalog metadata stays in sidecar YAML files. This directory does not use frontmatter.
 
@@ -102,5 +102,6 @@ Minimal project runtime state lives separately in:
 
 ## Workflow
 
-- Use `$project-manage` to inspect, install, remove, promote, or repair catalog-managed items.
+- Use `$project-manage` from root to inspect, install, remove, promote, or repair catalog-managed items.
 - Treat items outside `validated` as not yet fully trusted.
+- Feature worktrees may consume the shared capabilities exposed from this root layer, but they should not own separate catalog copies by default.

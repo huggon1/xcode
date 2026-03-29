@@ -1,6 +1,7 @@
 # Copy these lines into .git/info/exclude in a real project checkout
-# so the Codex operating layer stays local by default.
+# so the root control plane stays local by default.
 
+/features/
 /AGENTS.md
 /.tmp/
 /.agents/

@@ -1,6 +1,6 @@
 # Temporary Staging
 
-Use this directory for files you want the model to inspect and organize.
+Use this shared root directory for files you want the model to inspect and organize.
 
 Typical uses:
 
@@ -11,6 +11,7 @@ Typical uses:
 Rules:
 
 - `.tmp/` is not a durable source of truth
+- `.tmp/` is shared across all feature worktrees
 - explicitly tell the model which staged file or folder to process
 - the model should suggest or confirm the best durable destination when it is not obvious
 - `.tmp/` is not owned by any single skill

@@ -1,8 +1,8 @@
 # Human Learning
 
-This directory stores private human improvement material for the current project root.
+This directory stores shared private human improvement material for the whole project.
 
-Use it for lessons about how you work with the model, where alignment tends to fail, and what behaviors you want to improve over time.
+Use it for lessons about how you work with the model across features, where alignment tends to fail, and what behaviors you want to improve over time.
 
 ## Location
 
@@ -72,6 +72,6 @@ The internal helper layer may update these parts directly:
 ## Workflow
 
 - Use `$learn` to create or update human-learning items explicitly.
-- `$close-task` may update existing active items when they are clearly relevant.
+- `$close-task` may update existing active items when they are clearly relevant from within a feature worktree.
 - Use [.agents/skills/_shared/scripts/human_learning.py](../../.agents/skills/_shared/scripts/human_learning.py) behind those skills when structured reads or metadata-only updates are enough.
-- Human-learning items are private working material, not active runtime capabilities.
+- Human-learning items are shared private working material, not active runtime capabilities.

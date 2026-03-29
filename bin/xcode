@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'EOF'
+Usage: xcode features/<feature-id> [codex-args...]
+   or: xcode <feature-id> [codex-args...]
+
+Start Codex in a feature worktree and add the shared root as an extra writable directory.
+Run this from the shared project root.
+EOF
+}
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+root_dir="$(cd -- "${script_dir}/.." && pwd -P)"
+
+target_arg="${1:-}"
+if [[ -z "${target_arg}" ]]; then
+  usage
+  exit 2
+fi
+shift
+
+target_arg="${target_arg%/}"
+
+case "${target_arg}" in
+  features/*)
+    target_path="${target_arg}"
+    ;;
+  *)
+    target_path="features/${target_arg}"
+    ;;
+esac
+
+feature_id="${target_path#features/}"
+
+if [[ -z "${feature_id}" || "${feature_id}" == "${target_path}" || "${feature_id}" == */* ]]; then
+  echo "xcode: expected a single feature worktree under features/." >&2
+  usage
+  exit 2
+fi
+
+if [[ ! -d "${root_dir}/${target_path}" ]]; then
+  echo "xcode: feature worktree not found: ${target_path}" >&2
+  exit 1
+fi
+
+if [[ ! -e "${root_dir}/${target_path}/.git" ]]; then
+  echo "xcode: path exists but does not look like a git worktree root: ${target_path}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${root_dir}/.work/features/${feature_id}/feature.toml" ]]; then
+  echo "xcode: shared feature metadata is missing for: ${feature_id}" >&2
+  exit 1
+fi
+
+if ! command -v codex >/dev/null 2>&1; then
+  echo "xcode: codex is not available on PATH." >&2
+  exit 127
+fi
+
+cd -- "${root_dir}"
+exec codex -C "${target_path}" --add-dir . "$@"

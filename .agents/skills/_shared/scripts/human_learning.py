@@ -12,6 +12,7 @@ from _recordlib import (
     now_iso,
     parse_markdown_record,
     print_output,
+    resolve_shared_root_relative,
     write_markdown_record,
 )
 
@@ -131,7 +132,7 @@ def record_summary(path: Path) -> dict[str, Any]:
 
 
 def command_list(args: argparse.Namespace) -> None:
-    root = Path(args.root)
+    root = Path(args.root) if args.root else resolve_shared_root_relative(ITEM_DIR)
     items: list[dict[str, Any]] = []
     for path in list_item_files(root):
         summary = record_summary(path)
@@ -267,7 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     list_parser = subparsers.add_parser("list", help="List human-learning items.")
-    list_parser.add_argument("--root", default=str(ITEM_DIR))
+    list_parser.add_argument("--root")
     list_parser.add_argument("--status", action="append")
     list_parser.add_argument("--tag", action="append")
     list_parser.add_argument("--query")

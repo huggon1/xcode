@@ -11,6 +11,7 @@ Use these helpers behind the core workflow skills to:
 - read task and human-learning metadata without loading full files
 - update frontmatter and selected fixed sections deterministically
 - keep canonical section order stable
+- resolve Codex session transcripts and extract visible conversation messages
 
 ## Runtime
 
@@ -28,16 +29,23 @@ Current helpers:
 
 - `task_records.py`
 - `human_learning.py`
+- `session_records.py`
 - `_recordlib.py`
 
 ## Scope
 
 These helpers support TOML frontmatter for:
 
-- `.work/tasks/*.md`
+- `.work/features/<feature-id>/tasks/*.md`
 - `.work/human-learning/items/*.md`
 
 They do not manage catalog item metadata. The catalog keeps sidecar YAML files.
+
+When invoked from inside `features/<feature-id>/`, the helpers should auto-detect:
+
+- the current feature id
+- the shared root
+- the shared feature task directory
 
 ## Payload Model
 
@@ -73,3 +81,5 @@ Rules:
 - `$learn`
   - use `human_learning.py upsert` for human-learning items
   - use helper-assisted reads to avoid reloading full task files unless needed
+  - use `task_records.py learning-candidates` to find completed tasks that are still pending learning
+  - use `session_records.py candidates` and `session_records.py read` when transcript-backed learning is needed

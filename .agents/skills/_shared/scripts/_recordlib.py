@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Iterable, Mapping
 from datetime import datetime
 from pathlib import Path
@@ -37,6 +38,46 @@ def load_json_file(path: str | Path) -> dict:
     if not isinstance(data, dict):
         raise ValueError("Payload must be a JSON object.")
     return data
+
+
+def current_codex_session_id() -> str:
+    return os.environ.get("CODEX_THREAD_ID", "").strip()
+
+
+def find_feature_context(start: str | Path = ".") -> dict[str, str]:
+    start_path = Path(start).resolve()
+
+    candidates = [start_path]
+    candidates.extend(start_path.parents)
+
+    for candidate in candidates:
+        if candidate.parent.name != "features":
+            continue
+
+        shared_root = candidate.parent.parent
+        feature_id = candidate.name
+        feature_metadata = shared_root / ".work" / "features" / feature_id / "feature.toml"
+        if feature_metadata.exists():
+            return {
+                "feature_root": str(candidate),
+                "shared_root": str(shared_root),
+                "feature_id": feature_id,
+                "feature_metadata": str(feature_metadata),
+            }
+
+    raise FileNotFoundError(
+        "Could not determine feature context from the current path. "
+        "Start from a feature worktree under features/<feature-id>/ or pass explicit shared paths."
+    )
+
+
+def resolve_shared_root_relative(path: str | Path, start: str | Path = ".") -> Path:
+    relative = Path(path)
+    try:
+        context = find_feature_context(start)
+    except FileNotFoundError:
+        return relative
+    return Path(context["shared_root"]) / relative
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
