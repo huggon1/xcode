@@ -1,0 +1,25 @@
+id: ecc-quality-and-testing
+title: ECC Quality And Testing
+summary: Review, verification, TDD, E2E, and browser-backed quality stack imported from ECC.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code
+validated: false
+includes:
+  - kind: agent
+    id: reviewer
+  - kind: skill
+    id: verification-loop
+  - kind: skill
+    id: tdd-workflow
+  - kind: skill
+    id: e2e-testing
+  - kind: skill
+    id: security-review
+  - kind: mcp
+    id: playwright
+warnings:
+  - This pack is imported into the external layer and is not yet validated.
+dependencies: []
+notes:
+  - Use this pack when a repo workstream needs strong review and test discipline.

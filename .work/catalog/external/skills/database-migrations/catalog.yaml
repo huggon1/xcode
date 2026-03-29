@@ -1,0 +1,12 @@
+id: database-migrations
+kind: skill
+title: Database Migrations
+summary: Plan and review safe schema changes, data migrations, rollbacks, and zero-downtime migration patterns.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/database-migrations
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful across SQL-backed repo workstreams.

@@ -1,0 +1,12 @@
+id: postgres-patterns
+kind: skill
+title: Postgres Patterns
+summary: PostgreSQL schema design, indexing, query optimization, and operational best practices.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/postgres-patterns
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful for SQL-backed repo workstreams and migration planning.

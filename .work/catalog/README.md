@@ -23,7 +23,7 @@ Each layer contains:
 ## Layer Meaning
 
 - `external`: imported or collected candidate items
-- `learned`: items created or learned from project work
+- `learned`: items created or learned from workstream activity
 - `validated`: items personally proven useful in practice
 
 ## Item Shapes
@@ -79,7 +79,7 @@ It should record:
 - `notes`
 
 It does not track the baseline workflow skills that ship with this root.
-It also does not track the control-plane state owned by `$project-manage`.
+It also does not track the control-plane state owned by `$workstream-manage`.
 
 ## Runtime Relationship
 
@@ -96,12 +96,12 @@ They become active only when intentionally materialized into standard root locat
 
 MCP items should be installed into `.codex/config.toml` as managed `[mcp_servers.<id>]` blocks.
 
-Minimal project runtime state lives separately in:
+Minimal shared runtime state lives separately in:
 
-- `.work/project-manage/state.toml`
+- `.work/state.toml`
 
 ## Workflow
 
-- Use `$project-manage` from root to inspect, install, remove, promote, or repair catalog-managed items.
+- Use `$workstream-manage` from root to inspect, install, remove, promote, or repair catalog-managed items.
 - Treat items outside `validated` as not yet fully trusted.
-- Feature worktrees may consume the shared capabilities exposed from this root layer, but they should not own separate catalog copies by default.
+- Workstream execution directories may consume the shared capabilities exposed from this root layer, but they should not own separate catalog copies by default.

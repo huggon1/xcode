@@ -1,0 +1,12 @@
+id: tdd-workflow
+kind: skill
+title: TDD Workflow
+summary: Test-driven development workflow with unit, integration, and E2E coverage expectations.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/tdd-workflow
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful as the future base for explicit test-first execution workflows.

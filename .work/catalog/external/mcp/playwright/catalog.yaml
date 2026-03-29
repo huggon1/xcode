@@ -1,0 +1,12 @@
+id: playwright
+kind: mcp
+title: Playwright MCP
+summary: Browser automation MCP used for E2E testing and UI validation workflows.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/.codex/config.toml
+dependencies: []
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful as the MCP backing for e2e-testing and browser-driven verification.

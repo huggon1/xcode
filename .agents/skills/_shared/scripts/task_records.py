@@ -8,18 +8,19 @@ from typing import Any
 
 from _recordlib import (
     current_codex_session_id,
-    find_feature_context,
+    find_workstream_context,
     first_nonempty_line,
     load_json_file,
     now_iso,
     parse_markdown_record,
     print_output,
     resolve_shared_root_relative,
+    update_session_registry,
     write_markdown_record,
 )
 
 
-TASK_DIR = Path(".work/features")
+TASK_DIR = Path(".work/workstreams")
 TASK_SECTION_ORDER = [
     "Goal",
     "Out of Scope",
@@ -34,7 +35,7 @@ TASK_SECTION_ORDER = [
 ]
 TASK_METADATA_ORDER = [
     "id",
-    "feature_id",
+    "workstream_id",
     "status",
     "learning_status",
     "created",
@@ -54,10 +55,10 @@ VALID_STATUS = {"planned", "active", "blocked", "done", "dropped"}
 VALID_LEARNING_STATUS = {"pending", "captured", "dropped"}
 
 
-def infer_feature_id_from_task_path(path: Path) -> str:
+def infer_workstream_id_from_task_path(path: Path) -> str:
     try:
         parts = path.parts
-        index = parts.index("features")
+        index = parts.index("workstreams")
         if len(parts) > index + 2 and parts[index + 2] == "tasks":
             return parts[index + 1]
     except ValueError:
@@ -65,23 +66,23 @@ def infer_feature_id_from_task_path(path: Path) -> str:
     return ""
 
 
-def resolve_task_root(root_arg: str | None, feature_id_arg: str | None, start: Path | None = None) -> Path:
+def resolve_task_root(root_arg: str | None, workstream_id_arg: str | None, start: Path | None = None) -> Path:
     if root_arg:
         return Path(root_arg)
 
     start_path = start or Path.cwd()
-    if feature_id_arg:
-        return resolve_shared_root_relative(Path(".work/features") / feature_id_arg / "tasks", start_path)
+    if workstream_id_arg:
+        return resolve_shared_root_relative(TASK_DIR / workstream_id_arg / "tasks", start_path)
 
-    context = find_feature_context(start_path)
-    return Path(context["shared_root"]) / ".work" / "features" / context["feature_id"] / "tasks"
+    context = find_workstream_context(start_path)
+    return Path(context["shared_root"]) / ".work" / "workstreams" / context["workstream_id"] / "tasks"
 
 
 def default_task_metadata(path: Path) -> dict[str, Any]:
     timestamp = now_iso()
     return {
         "id": path.stem,
-        "feature_id": infer_feature_id_from_task_path(path),
+        "workstream_id": infer_workstream_id_from_task_path(path),
         "status": "active",
         "learning_status": "pending",
         "created": timestamp,
@@ -99,23 +100,17 @@ def default_task_metadata(path: Path) -> dict[str, Any]:
     }
 
 
-def try_current_feature_id() -> str:
+def try_current_workstream_context() -> dict[str, str]:
     try:
-        return str(find_feature_context(Path.cwd())["feature_id"])
+        return find_workstream_context(Path.cwd())
     except FileNotFoundError:
-        return ""
+        return {}
 
 
 def list_task_files(root: Path) -> list[Path]:
     if not root.exists():
         return []
-    return sorted(
-        [
-            path
-            for path in root.glob("*.md")
-            if path.name != "README.md"
-        ]
-    )
+    return sorted(path for path in root.glob("*.md") if path.name != "README.md")
 
 
 def normalize_task_metadata(
@@ -141,11 +136,18 @@ def normalize_task_metadata(
     metadata["learning_refs"] = list(metadata.get("learning_refs") or [])
     metadata["session_refs"] = list(metadata.get("session_refs") or [])
 
-    feature_context_id = try_current_feature_id()
+    context = try_current_workstream_context()
     current_session_id = current_codex_session_id()
-    if current_session_id and feature_context_id and metadata.get("feature_id") == feature_context_id:
-        if current_session_id not in metadata["session_refs"]:
-            metadata["session_refs"].append(current_session_id)
+    if current_session_id and context and metadata.get("workstream_id") == context.get("workstream_id"):
+        registered = update_session_registry(
+            shared_root=context["shared_root"],
+            workstream_id=context["workstream_id"],
+            task_id=str(metadata.get("id") or path.stem),
+            execution_path=f"workstreams/{context['workstream_id']}",
+            session_id=current_session_id,
+        )
+        if registered and registered not in metadata["session_refs"]:
+            metadata["session_refs"].append(registered)
 
     if metadata["learning_refs"] and metadata.get("learning_status") == "pending":
         metadata["learning_status"] = "captured"
@@ -195,7 +197,7 @@ def record_summary(path: Path) -> dict[str, Any]:
     return {
         "path": str(path),
         "title": record["title"] or path.stem,
-        "feature_id": metadata.get("feature_id", infer_feature_id_from_task_path(path)),
+        "workstream_id": metadata.get("workstream_id", infer_workstream_id_from_task_path(path)),
         "status": metadata.get("status", ""),
         "learning_status": metadata.get("learning_status", ""),
         "updated": metadata.get("updated", ""),
@@ -210,20 +212,14 @@ def record_summary(path: Path) -> dict[str, Any]:
     }
 
 
-def all_feature_task_files(root: Path) -> list[Path]:
+def all_workstream_task_files(root: Path) -> list[Path]:
     if not root.exists():
         return []
-    return sorted(
-        [
-            path
-            for path in root.glob("*/tasks/*.md")
-            if path.name != "README.md"
-        ]
-    )
+    return sorted(path for path in root.glob("*/tasks/*.md") if path.name != "README.md")
 
 
 def command_list(args: argparse.Namespace) -> None:
-    root = resolve_task_root(args.root, args.feature_id)
+    root = resolve_task_root(args.root, args.workstream_id)
     items: list[dict[str, Any]] = []
     for path in list_task_files(root):
         summary = record_summary(path)
@@ -259,21 +255,21 @@ def command_list(args: argparse.Namespace) -> None:
 
     for item in items:
         print(
-            f"{item['path']} | feature={item['feature_id']} | {item['status']} | "
+            f"{item['path']} | workstream={item['workstream_id']} | {item['status']} | "
             f"learning={item['learning_status']} | {item['updated']} | {item['title']} | {item['next_action']}"
         )
 
 
 def command_learning_candidates(args: argparse.Namespace) -> None:
-    root = Path(args.root or ".work/features")
+    root = Path(args.root or ".work/workstreams")
     items: list[dict[str, Any]] = []
-    for path in all_feature_task_files(root):
+    for path in all_workstream_task_files(root):
         summary = record_summary(path)
         if summary["status"] not in set(args.status):
             continue
         if summary["learning_status"] not in set(args.learning_status):
             continue
-        if args.feature_id and summary["feature_id"] != args.feature_id:
+        if args.workstream_id and summary["workstream_id"] != args.workstream_id:
             continue
         items.append(summary)
 
@@ -287,7 +283,7 @@ def command_learning_candidates(args: argparse.Namespace) -> None:
 
     for item in items:
         print(
-            f"{item['path']} | feature={item['feature_id']} | {item['status']} | "
+            f"{item['path']} | workstream={item['workstream_id']} | {item['status']} | "
             f"learning={item['learning_status']} | {item['updated']} | {item['title']}"
         )
 
@@ -374,12 +370,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Structured task record helper.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    context_parser = subparsers.add_parser("context", help="Resolve the current feature context and shared task root.")
+    context_parser = subparsers.add_parser("context", help="Resolve the current workstream context and shared task root.")
     context_parser.add_argument("--format", choices=("text", "json"), default="json")
     context_parser.set_defaults(
         func=lambda args: print_output(
             {
-                **find_feature_context(Path.cwd()),
+                **find_workstream_context(Path.cwd()),
                 "task_root": str(resolve_task_root(None, None)),
             },
             args.format,
@@ -388,7 +384,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_parser = subparsers.add_parser("list", help="List task records using metadata-first filters.")
     list_parser.add_argument("--root")
-    list_parser.add_argument("--feature-id")
+    list_parser.add_argument("--workstream-id")
     list_parser.add_argument("--status", action="append")
     list_parser.add_argument("--tag", action="append")
     list_parser.add_argument("--task-type")
@@ -400,20 +396,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     learning_candidates_parser = subparsers.add_parser(
         "learning-candidates",
-        help="List completed feature tasks that are still pending learning.",
+        help="List completed workstream tasks that are still pending learning.",
     )
     learning_candidates_parser.add_argument("--root")
-    learning_candidates_parser.add_argument("--feature-id")
-    learning_candidates_parser.add_argument(
-        "--status",
-        action="append",
-        default=["done"],
-    )
-    learning_candidates_parser.add_argument(
-        "--learning-status",
-        action="append",
-        default=["pending"],
-    )
+    learning_candidates_parser.add_argument("--workstream-id")
+    learning_candidates_parser.add_argument("--status", action="append", default=["done"])
+    learning_candidates_parser.add_argument("--learning-status", action="append", default=["pending"])
     learning_candidates_parser.add_argument("--limit", type=int)
     learning_candidates_parser.add_argument("--format", choices=("text", "json"), default="text")
     learning_candidates_parser.set_defaults(func=command_learning_candidates)

@@ -3,10 +3,10 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-Usage: xcode features/<feature-id> [codex-args...]
-   or: xcode <feature-id> [codex-args...]
+Usage: xcode workstreams/<workstream-id> [codex-args...]
+   or: xcode <workstream-id> [codex-args...]
 
-Start Codex in a feature worktree and add the shared root as an extra writable directory.
+Start Codex in a workstream execution directory and add the shared root as an extra writable directory.
 Run this from the shared project root.
 EOF
 }
@@ -24,34 +24,58 @@ shift
 target_arg="${target_arg%/}"
 
 case "${target_arg}" in
-  features/*)
+  workstreams/*)
     target_path="${target_arg}"
     ;;
   *)
-    target_path="features/${target_arg}"
+    target_path="workstreams/${target_arg}"
     ;;
 esac
 
-feature_id="${target_path#features/}"
+workstream_id="${target_path#workstreams/}"
 
-if [[ -z "${feature_id}" || "${feature_id}" == "${target_path}" || "${feature_id}" == */* ]]; then
-  echo "xcode: expected a single feature worktree under features/." >&2
+if [[ -z "${workstream_id}" || "${workstream_id}" == "${target_path}" || "${workstream_id}" == */* ]]; then
+  echo "xcode: expected a single workstream execution directory under workstreams/." >&2
   usage
   exit 2
 fi
 
 if [[ ! -d "${root_dir}/${target_path}" ]]; then
-  echo "xcode: feature worktree not found: ${target_path}" >&2
+  echo "xcode: workstream execution directory not found: ${target_path}" >&2
   exit 1
 fi
 
-if [[ ! -e "${root_dir}/${target_path}/.git" ]]; then
-  echo "xcode: path exists but does not look like a git worktree root: ${target_path}" >&2
+metadata_path="${root_dir}/.work/workstreams/${workstream_id}/workstream.toml"
+
+if [[ ! -f "${metadata_path}" ]]; then
+  echo "xcode: shared workstream metadata is missing for: ${workstream_id}" >&2
   exit 1
 fi
 
-if [[ ! -f "${root_dir}/.work/features/${feature_id}/feature.toml" ]]; then
-  echo "xcode: shared feature metadata is missing for: ${feature_id}" >&2
+workstream_type="$(grep -E '^type = ' "${metadata_path}" | head -n 1 | sed -E 's/^type = "(.*)"$/\1/')"
+
+if [[ -z "${workstream_type}" ]]; then
+  echo "xcode: could not determine workstream type from: ${metadata_path}" >&2
+  exit 1
+fi
+
+case "${workstream_type}" in
+  repo)
+    if [[ ! -e "${root_dir}/${target_path}/.git" ]]; then
+      echo "xcode: repo workstream does not look like a git worktree root: ${target_path}" >&2
+      exit 1
+    fi
+    ;;
+  daily)
+    ;;
+  *)
+    echo "xcode: unsupported workstream type '${workstream_type}' in ${metadata_path}" >&2
+    exit 1
+    ;;
+esac
+
+if [[ ! -f "${root_dir}/${target_path}/AGENTS.md" ]]; then
+  echo "xcode: workstream runtime shell is incomplete; missing AGENTS.md in ${target_path}" >&2
   exit 1
 fi
 

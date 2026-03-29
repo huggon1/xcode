@@ -1,0 +1,31 @@
+id: ecc-python-django
+title: ECC Python Django
+summary: Python, Django, database, and API guidance for Python-centric repo workstreams.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code
+validated: false
+includes:
+  - kind: skill
+    id: api-design
+  - kind: skill
+    id: database-migrations
+  - kind: skill
+    id: postgres-patterns
+  - kind: skill
+    id: python-patterns
+  - kind: skill
+    id: python-testing
+  - kind: skill
+    id: django-patterns
+  - kind: skill
+    id: django-security
+  - kind: skill
+    id: django-tdd
+  - kind: skill
+    id: django-verification
+warnings:
+  - This pack is imported into the external layer and is not yet validated.
+dependencies: []
+notes:
+  - Use this pack as the primary ECC-derived stack for Python and Django repositories.

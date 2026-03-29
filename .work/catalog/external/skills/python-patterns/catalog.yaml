@@ -1,0 +1,12 @@
+id: python-patterns
+kind: skill
+title: Python Patterns
+summary: Pythonic idioms, type hints, and maintainable application patterns for Python codebases.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/python-patterns
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Imported as the primary language-specific development guidance for Python workstreams.

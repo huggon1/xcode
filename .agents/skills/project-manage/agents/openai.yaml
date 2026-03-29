@@ -1,6 +1,0 @@
-interface:
-  display_name: "Project Manage"
-  short_description: "Manage the shared root control plane, feature lifecycle, and shared capabilities"
-  default_prompt: "Act as the project control plane for the current repository root. Refuse to run from inside a feature worktree. If no instruction is given, explain what you can do, recommend the most useful next root-level step, and show a few examples. If an in-scope instruction is given, handle it directly. Keep doctor, recommend, and explain read-only unless the user asks for changes. Own feature create, close, and archive lifecycle at root. Keep `.work/project-manage/state.toml` aligned when confirmed shared runtime-layer changes are made."
-policy:
-  allow_implicit_invocation: false

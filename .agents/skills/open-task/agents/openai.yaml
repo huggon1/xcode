@@ -1,6 +1,6 @@
 interface:
   display_name: "Open Task"
-  short_description: "Start or resume a task for the current feature worktree"
-  default_prompt: "Open a task for the current feature worktree. If no instruction is given, explain whether creating a task or resuming one looks more likely for the current feature and show examples. If an in-scope instruction is given, create, resume, or normalize the task record directly, preview the intended change, and update it after confirmation. Refuse to operate from the shared root control plane."
+  short_description: "Start or resume a task for the current workstream execution directory"
+  default_prompt: "Open a task for the current workstream execution directory. If no instruction is given, explain whether creating a task or resuming one looks more likely for the current workstream and show examples. If an in-scope instruction is given, create, resume, or normalize the task record directly, preview the intended change, and update it after confirmation. Refuse to operate from the shared root control plane."
 policy:
   allow_implicit_invocation: false

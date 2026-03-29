@@ -11,7 +11,7 @@ Typical uses:
 Rules:
 
 - `.tmp/` is not a durable source of truth
-- `.tmp/` is shared across all feature worktrees
+- `.tmp/` is shared across all workstream execution directories
 - explicitly tell the model which staged file or folder to process
 - the model should suggest or confirm the best durable destination when it is not obvious
 - `.tmp/` is not owned by any single skill

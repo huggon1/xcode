@@ -17,7 +17,7 @@ from _recordlib import (
 )
 
 
-ITEM_DIR = Path(".work/human-learning/items")
+ITEM_DIR = Path(".work/learning/human")
 ITEM_SECTION_ORDER = [
     "Why This Matters",
     "Applies When",
@@ -51,7 +51,7 @@ def default_item_metadata(path: Path) -> dict[str, Any]:
         "updated": timestamp,
         "success_streak": 0,
         "retire_after": 3,
-        "scope": "project",
+        "scope": "workspace",
         "tags": [],
         "applies_to": [],
         "summary": "",

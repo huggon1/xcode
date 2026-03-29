@@ -1,0 +1,12 @@
+id: exa
+kind: mcp
+title: Exa MCP
+summary: Neural web and code search server used by Exa-based research skills.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/.codex/config.toml
+dependencies: []
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful as the MCP backing for exa-search and broader research workflows.

@@ -1,0 +1,12 @@
+id: docker-patterns
+kind: skill
+title: Docker Patterns
+summary: Docker and Docker Compose patterns for local development, container security, networking, and multi-service setups.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/docker-patterns
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful for local dev environments and containerized repo workstreams.

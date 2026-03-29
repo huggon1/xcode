@@ -1,0 +1,29 @@
+id: ecc-research-and-onboarding
+title: ECC Research And Onboarding
+summary: Exploration, documentation lookup, onboarding, ADR capture, and Exa-backed research helpers.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code
+validated: false
+includes:
+  - kind: mcp
+    id: context7
+  - kind: mcp
+    id: exa
+  - kind: agent
+    id: explorer
+  - kind: agent
+    id: docs-researcher
+  - kind: skill
+    id: documentation-lookup
+  - kind: skill
+    id: exa-search
+  - kind: skill
+    id: codebase-onboarding
+  - kind: skill
+    id: architecture-decision-records
+warnings:
+  - This pack is imported into the external layer and is not yet validated.
+dependencies: []
+notes:
+  - Use this pack for discovery, reference gathering, and structured onboarding work.

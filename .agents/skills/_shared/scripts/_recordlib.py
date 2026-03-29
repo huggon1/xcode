@@ -40,41 +40,48 @@ def load_json_file(path: str | Path) -> dict:
     return data
 
 
+def load_toml_file(path: str | Path) -> dict:
+    data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Payload must be a TOML table.")
+    return data
+
+
 def current_codex_session_id() -> str:
     return os.environ.get("CODEX_THREAD_ID", "").strip()
 
 
-def find_feature_context(start: str | Path = ".") -> dict[str, str]:
+def find_workstream_context(start: str | Path = ".") -> dict[str, str]:
     start_path = Path(start).resolve()
 
     candidates = [start_path]
     candidates.extend(start_path.parents)
 
     for candidate in candidates:
-        if candidate.parent.name != "features":
+        if candidate.parent.name != "workstreams":
             continue
 
         shared_root = candidate.parent.parent
-        feature_id = candidate.name
-        feature_metadata = shared_root / ".work" / "features" / feature_id / "feature.toml"
-        if feature_metadata.exists():
+        workstream_id = candidate.name
+        workstream_metadata = shared_root / ".work" / "workstreams" / workstream_id / "workstream.toml"
+        if workstream_metadata.exists():
             return {
-                "feature_root": str(candidate),
+                "workstream_root": str(candidate),
                 "shared_root": str(shared_root),
-                "feature_id": feature_id,
-                "feature_metadata": str(feature_metadata),
+                "workstream_id": workstream_id,
+                "workstream_metadata": str(workstream_metadata),
             }
 
     raise FileNotFoundError(
-        "Could not determine feature context from the current path. "
-        "Start from a feature worktree under features/<feature-id>/ or pass explicit shared paths."
+        "Could not determine workstream context from the current path. "
+        "Start from a workstream directory under workstreams/<workstream-id>/ or pass explicit shared paths."
     )
 
 
 def resolve_shared_root_relative(path: str | Path, start: str | Path = ".") -> Path:
     relative = Path(path)
     try:
-        context = find_feature_context(start)
+        context = find_workstream_context(start)
     except FileNotFoundError:
         return relative
     return Path(context["shared_root"]) / relative
@@ -115,6 +122,22 @@ def dump_frontmatter(metadata: Mapping[str, object], key_order: Iterable[str]) -
     return "\n".join(lines)
 
 
+def dump_toml_table(data: Mapping[str, object], key_order: Iterable[str]) -> str:
+    lines: list[str] = []
+    emitted: set[str] = set()
+
+    for key in key_order:
+        if key in data:
+            lines.append(f"{key} = {toml_value(data[key])}")
+            emitted.add(key)
+
+    for key in data:
+        if key not in emitted:
+            lines.append(f"{key} = {toml_value(data[key])}")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def toml_value(value: object) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -128,7 +151,7 @@ def toml_value(value: object) -> str:
             raise TypeError("Only lists of strings are supported in frontmatter.")
         inner = ", ".join(toml_value(item) for item in value)
         return f"[{inner}]"
-    raise TypeError(f"Unsupported frontmatter value type: {type(value)!r}")
+    raise TypeError(f"Unsupported TOML value type: {type(value)!r}")
 
 
 def parse_markdown_record(path: str | Path) -> dict:
@@ -210,6 +233,60 @@ def write_markdown_record(
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(output, encoding="utf-8")
+
+
+def write_toml_record(path: str | Path, data: Mapping[str, object], key_order: Iterable[str]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(dump_toml_table(data, key_order), encoding="utf-8")
+
+
+def derive_session_label(workstream_id: str, task_id: str, started_at: str) -> str:
+    day = started_at.split("T", 1)[0] if started_at else now_iso().split("T", 1)[0]
+    task_part = task_id or "session"
+    return f"{workstream_id}/{task_part}/{day}"
+
+
+def update_session_registry(
+    shared_root: str | Path,
+    workstream_id: str,
+    task_id: str,
+    execution_path: str | None = None,
+    session_id: str | None = None,
+) -> str:
+    current_id = (session_id or current_codex_session_id()).strip()
+    if not current_id:
+        return ""
+
+    root = Path(shared_root)
+    path = root / ".work" / "workstreams" / workstream_id / "sessions" / f"{current_id}.toml"
+    existing: dict[str, object] = load_toml_file(path) if path.exists() else {}
+    started_at = str(existing.get("started_at") or now_iso())
+
+    record = {
+        "session_id": current_id,
+        "workstream_id": workstream_id,
+        "task_id": task_id,
+        "label": derive_session_label(workstream_id=workstream_id, task_id=task_id, started_at=started_at),
+        "started_at": started_at,
+        "updated_at": now_iso(),
+        "execution_path": execution_path or f"workstreams/{workstream_id}",
+    }
+
+    write_toml_record(
+        path=path,
+        data=record,
+        key_order=[
+            "session_id",
+            "workstream_id",
+            "task_id",
+            "label",
+            "started_at",
+            "updated_at",
+            "execution_path",
+        ],
+    )
+    return current_id
 
 
 def print_output(payload: object, output_format: str) -> None:

@@ -1,6 +1,6 @@
 interface:
   display_name: "Learn"
-  short_description: "Capture a learned skill, a human improvement item, or a project rule candidate"
-  default_prompt: "Capture explicit learning from recent work. If no instruction is given, enter guided learning triage. At root, prefer selecting a completed task that is still pending learning. When a task is involved, prefer task-first reads and transcript-backed learning through the shared helper scripts. If an in-scope instruction is given, bias toward learned skill, human-improvement item, project rule candidate, multi-output, or evaluation. Preview the result and write only after confirmation."
+  short_description: "Capture a learned skill, a human improvement item, or a workstream rule candidate"
+  default_prompt: "Capture explicit learning from recent work. If no instruction is given, enter guided learning triage. At root, prefer selecting a completed task that is still pending learning. When a task is involved, prefer task-first reads and transcript-backed learning through the shared helper scripts. If an in-scope instruction is given, bias toward learned skill, human-improvement item, workstream rule candidate, multi-output, or evaluation. Preview the result and write only after confirmation."
 policy:
   allow_implicit_invocation: false

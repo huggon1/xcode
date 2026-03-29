@@ -1,23 +1,23 @@
 ---
 name: close-task
-description: Use when the user wants to stop work on a task for the current feature worktree, end a session, finish a task, or drop a task. Trigger on requests like close task, end session, stop work, finish task, or complete task.
+description: Use when the user wants to stop work on a task for the current workstream execution directory, end a session, finish a task, or drop a task. Trigger on requests like close task, end session, stop work, finish task, or complete task.
 ---
 
 # Close Task
 
-Treat the current repository root as the current feature worktree.
+Treat the current repository root as the current workstream execution directory.
 
 ## Purpose
 
-Close out the current work state for a task in the current feature, whether the task remains live or becomes closed.
+Close out the current work state for a task in the current workstream, whether the task remains live or becomes closed.
 
-This skill may also do a light review against existing shared human-learning items under the root `.work/human-learning/items/`.
+This skill may also do a light review against existing shared human-learning items under the root `.work/learning/human/`.
 
 ## Interaction Model
 
 - If invoked with no instruction:
   - enter guided close flow
-  - identify the current feature task candidate
+  - identify the current workstream task candidate
   - ask only for the minimum task-closing information
 - If invoked with an in-scope instruction:
   - use that instruction to bias the close direction
@@ -38,7 +38,7 @@ This skill may also do a light review against existing shared human-learning ite
 
 Do not use this skill to:
 
-- install or remove project capabilities
+- install or remove shared capabilities
 - open a new task
 - create new human-learning items
 - run a full review workflow
@@ -46,23 +46,23 @@ Do not use this skill to:
 
 ## Workflow
 
-1. Resolve feature context from the current path.
+1. Resolve workstream context from the current path.
    - if the request is clearly out of scope:
      - explain the boundary briefly
      - point to the better skill
      - stop without writing
    - if there is no instruction, start guided close flow instead of showing a help page
    - prefer `.agents/skills/_shared/scripts/task_records.py context` when `python3` is available
-   - otherwise determine the current feature from the worktree path
+   - otherwise determine the current workstream from the execution path
 2. Identify the task file.
    - if the user gives it directly, use it
    - otherwise prefer `.agents/skills/_shared/scripts/task_records.py list` for metadata-first search when `python3` is available
-   - if the helper is unavailable, search the shared feature task directory directly
+   - if the helper is unavailable, search the shared workstream task directory directly
    - if multiple candidates are plausible, ask
 3. Read the task file.
    - prefer `.agents/skills/_shared/scripts/task_records.py read` with metadata and only the sections needed for closure when `python3` is available
    - otherwise read the task file directly
-   - confirm that the task belongs to the current feature
+   - confirm that the task belongs to the current workstream
 4. Collect the session outcome:
    - current state
    - active decisions
@@ -81,7 +81,7 @@ Do not use this skill to:
      - `done` when the task is complete
      - `dropped` when the task is intentionally abandoned
      - `planned` only when the task is being parked before active work resumes
-5. If shared `.work/human-learning/items/` exists:
+5. If shared `.work/learning/human/` exists:
    - prefer `.agents/skills/_shared/scripts/human_learning.py list --status active` when `python3` is available
    - inspect only `status: active` items
    - consider only items clearly relevant to the task that is being closed
@@ -99,7 +99,7 @@ Do not use this skill to:
    - if `success_streak` reaches or exceeds `retire_after`, ask whether to set `status: delete`
    - do not create new human-learning items; use `$learn` for that
 6. Prepare a brief preview:
-   - feature id
+   - workstream id
    - fields to update
    - any human-learning item updates
    - whether `Final Outcome` and `closed` will be written
@@ -108,18 +108,18 @@ Do not use this skill to:
    - update the shared task file
    - update any confirmed human-learning items
    - append one concise important event when meaningful
-   - keep `session_refs` aligned with the current feature session when helper-driven writes are available
+   - keep `session_refs` aligned with the current workstream session when helper-driven writes are available
    - if status is `done` or `dropped`, write `Final Outcome` and set `closed`
    - otherwise keep `Final Outcome` empty and `closed` unset
-   - keep the file in the same feature task directory
+   - keep the file in the same workstream task directory
 
 ## Writing Rules
 
 - Preview before writing.
-- Refuse to operate when started from the shared root instead of a feature worktree.
-- Do not close or update a task that belongs to a different feature.
+- Refuse to operate when started from the shared root instead of a workstream execution directory.
+- Do not close or update a task that belongs to a different workstream.
 - Keep `Important Events` concise and append-only.
-- Do not create an archive move; closed tasks remain in the same feature task directory.
+- Do not create an archive move; closed tasks remain in the same workstream task directory.
 - Do not mark learning as captured from this skill; use `$learn` for that.
 - Keep human-learning review brief and relevant.
 - Only update existing human-learning items from this skill.

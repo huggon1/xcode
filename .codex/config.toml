@@ -4,5 +4,5 @@ approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "cached"
 
-# project-manage: managed config blocks start
-# project-manage: managed config blocks end
+# workstream-manage: managed config blocks start
+# workstream-manage: managed config blocks end

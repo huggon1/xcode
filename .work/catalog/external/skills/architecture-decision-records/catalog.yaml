@@ -1,0 +1,12 @@
+id: architecture-decision-records
+kind: skill
+title: Architecture Decision Records
+summary: Capture major technical decisions as lightweight ADRs for later reference.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/architecture-decision-records
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - May need output adaptation from ECC's CLAUDE-oriented examples to this workspace's docs and AGENTS conventions.

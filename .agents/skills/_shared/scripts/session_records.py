@@ -6,11 +6,11 @@ import argparse
 import json
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from _recordlib import current_codex_session_id, parse_markdown_record, print_output
+from _recordlib import current_codex_session_id, load_toml_file, parse_markdown_record, print_output
 
 
 SESSION_STORE = Path.home() / ".codex" / "sessions"
@@ -125,10 +125,24 @@ def task_keywords(record: dict[str, Any]) -> set[str]:
     return keywords
 
 
+def session_registry_dir(task_path: Path) -> Path:
+    return task_path.parent.parent / "sessions"
+
+
+def registry_record_for_session(task_path: Path, session_id: str) -> dict[str, Any]:
+    path = session_registry_dir(task_path) / f"{session_id}.toml"
+    if not path.exists():
+        return {}
+    try:
+        return load_toml_file(path)
+    except Exception:
+        return {}
+
+
 def infer_candidates(task_path: Path, sessions_root: Path, limit: int | None = None) -> list[dict[str, Any]]:
     task = parse_markdown_record(task_path)
     metadata = task["metadata"]
-    feature_id = str(metadata.get("feature_id") or "")
+    workstream_id = str(metadata.get("workstream_id") or "")
     created = parse_iso(str(metadata.get("created") or ""))
     updated = parse_iso(str(metadata.get("updated") or ""))
     closed = parse_iso(str(metadata.get("closed") or ""))
@@ -145,12 +159,14 @@ def infer_candidates(task_path: Path, sessions_root: Path, limit: int | None = N
         meta = load_session_meta(resolved)
         if not meta:
             continue
+        registry = registry_record_for_session(task_path, meta.session_id)
         explicit_paths.append(
             {
                 "session_id": meta.session_id,
                 "path": str(meta.path),
                 "cwd": meta.cwd,
                 "started_at": meta.started_at,
+                "label": str(registry.get("label") or ""),
                 "source": "task.session_refs",
                 "score": 100,
                 "reasons": ["explicit task session ref"],
@@ -162,8 +178,7 @@ def infer_candidates(task_path: Path, sessions_root: Path, limit: int | None = N
         return explicit_paths[:limit] if limit else explicit_paths
 
     candidates: list[dict[str, Any]] = []
-    lower_feature_marker = f"{os.sep}features{os.sep}{feature_id}" if feature_id else ""
-    lower_keywords = keywords
+    lower_workstream_marker = f"{os.sep}workstreams{os.sep}{workstream_id}" if workstream_id else ""
 
     for path in iter_session_files(sessions_root):
         meta = load_session_meta(path)
@@ -173,28 +188,26 @@ def infer_candidates(task_path: Path, sessions_root: Path, limit: int | None = N
         score = 0
         reasons: list[str] = []
         cwd_lower = meta.cwd.lower()
-        if lower_feature_marker and lower_feature_marker in cwd_lower:
+        if lower_workstream_marker and lower_workstream_marker in cwd_lower:
             score += 50
-            reasons.append("feature worktree cwd match")
+            reasons.append("workstream execution cwd match")
 
         started_dt = parse_iso(meta.started_at)
-        if started_dt and feature_id:
-            window_start = created or updated or closed
-            window_end = closed or updated or created
-            if window_start:
-                window_start = window_start - timedelta(days=1)
-            if window_end:
-                window_end = window_end + timedelta(days=1)
-            if window_start and window_end and window_start <= started_dt <= window_end:
+        window_start = created or updated or closed
+        window_end = closed or updated or created
+        if started_dt and window_start and window_end:
+            window_start = window_start - timedelta(days=1)
+            window_end = window_end + timedelta(days=1)
+            if window_start <= started_dt <= window_end:
                 score += 20
                 reasons.append("timestamp near task activity window")
 
-        if lower_keywords:
+        if keywords:
             try:
                 content = path.read_text(encoding="utf-8", errors="ignore").lower()
             except OSError:
                 content = ""
-            keyword_hits = [keyword for keyword in lower_keywords if keyword in content]
+            keyword_hits = [keyword for keyword in keywords if keyword in content]
             if keyword_hits:
                 score += min(20, len(keyword_hits) * 5)
                 reasons.append(f"keyword hits: {', '.join(sorted(keyword_hits)[:4])}")
@@ -202,12 +215,14 @@ def infer_candidates(task_path: Path, sessions_root: Path, limit: int | None = N
         if score <= 0:
             continue
 
+        registry = registry_record_for_session(task_path, meta.session_id)
         candidates.append(
             {
                 "session_id": meta.session_id,
                 "path": str(meta.path),
                 "cwd": meta.cwd,
                 "started_at": meta.started_at,
+                "label": str(registry.get("label") or ""),
                 "source": "inferred",
                 "score": score,
                 "reasons": reasons,

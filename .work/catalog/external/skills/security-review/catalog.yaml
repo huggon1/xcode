@@ -1,0 +1,12 @@
+id: security-review
+kind: skill
+title: Security Review
+summary: Security checklist and implementation patterns for auth, input validation, secrets, sensitive data, and APIs.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code/skills/security-review
+dependencies:
+validated: false
+notes:
+  - Imported from ECC as an unvalidated external candidate.
+  - Useful as a review aid before closing security-sensitive work.

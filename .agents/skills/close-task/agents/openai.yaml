@@ -1,6 +1,6 @@
 interface:
   display_name: "Close Task"
-  short_description: "Update and close out a task for the current feature worktree"
-  default_prompt: "Close out a task for the current feature worktree. If no instruction is given, enter a guided closing flow and ask for only the minimum closure details. If an in-scope instruction is given, use it to bias the result toward done, blocked, paused, or dropped, then preview the update and write only after confirmation. Refuse to operate from the shared root control plane."
+  short_description: "Update and close out a task for the current workstream execution directory"
+  default_prompt: "Close out a task for the current workstream execution directory. If no instruction is given, enter a guided closing flow and ask for only the minimum closure details. If an in-scope instruction is given, use it to bias the result toward done, blocked, paused, or dropped, then preview the update and write only after confirmation. Refuse to operate from the shared root control plane."
 policy:
   allow_implicit_invocation: false

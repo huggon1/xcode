@@ -1,0 +1,25 @@
+id: ecc-platform-delivery
+title: ECC Platform Delivery
+summary: API, database, Docker, deployment, and MCP-server guidance for platform-oriented workstreams.
+layer: external
+origin: everything-claude-code
+source_ref: resource/everything-claude-code
+validated: false
+includes:
+  - kind: skill
+    id: api-design
+  - kind: skill
+    id: database-migrations
+  - kind: skill
+    id: postgres-patterns
+  - kind: skill
+    id: docker-patterns
+  - kind: skill
+    id: deployment-patterns
+  - kind: skill
+    id: mcp-server-patterns
+warnings:
+  - This pack is imported into the external layer and is not yet validated.
+dependencies: []
+notes:
+  - Use this pack for backend delivery, infra-adjacent work, and MCP-serving projects.

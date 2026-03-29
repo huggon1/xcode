@@ -36,16 +36,17 @@ Current helpers:
 
 These helpers support TOML frontmatter for:
 
-- `.work/features/<feature-id>/tasks/*.md`
-- `.work/human-learning/items/*.md`
+- `.work/workstreams/<workstream-id>/tasks/*.md`
+- `.work/learning/human/*.md`
 
 They do not manage catalog item metadata. The catalog keeps sidecar YAML files.
 
-When invoked from inside `features/<feature-id>/`, the helpers should auto-detect:
+When invoked from inside `workstreams/<workstream-id>/`, the helpers should auto-detect:
 
-- the current feature id
+- the current workstream id
 - the shared root
-- the shared feature task directory
+- the shared workstream task directory
+- and, when a task is updated from an active Codex session, keep the workstream session registry in sync
 
 ## Payload Model
 

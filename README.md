@@ -1,17 +1,18 @@
-# Codex Project Control Plane Kit
+# Codex Workstream Control Plane Kit
 
-This repository is a private-first root kit for one project with multiple feature worktrees.
+This repository is a private-first root kit for one shared workspace with multiple workstreams.
 
-The matching model-facing rules live in [AGENTS.md](AGENTS.md).
+The matching model-facing rules live in `AGENTS.md`.
 
 ## Quick Use
 
 Use this kit when you want:
 
-- one shared root for long-lived project knowledge
-- one feature branch per worktree under `features/`
-- shared task records, specs, dependencies, catalog, human-learning, and staging
-- feature-local execution sessions with isolated code state
+- one shared root for docs, catalog, learning, staging, and workstream records
+- multiple execution directories under `workstreams/`
+- both code and non-code workstreams under one model
+- shared task truth outside execution directories
+- transcript-backed learning from completed tasks
 
 ### Session Types
 
@@ -21,28 +22,22 @@ Use two session types on purpose.
 
 Start Codex at the root when you want to:
 
-- create or inspect feature branches and worktrees
-- inspect shared project state
+- create or inspect workstreams
+- inspect shared workspace state
 - manage shared capabilities
-- review shared specs, dependencies, catalog, human-learning, or staged input
+- review shared docs, catalog, learning, or staged input
+- close or archive a workstream
 
 Primary skill:
 
-- `$project-manage`
+- `$workstream-manage`
 
-Use it for feature lifecycle as well:
+#### Workstream session
 
-- create a feature branch + worktree
-- inspect feature status
-- close a feature as `merged` or `abandoned`
-- archive a finished feature
+Start a workstream session when you want to:
 
-#### Feature session
-
-Start a feature session from the root when you want to:
-
-- open or resume a task for that feature
-- implement code changes
+- open or resume a task for that workstream
+- do implementation or structured work
 - close out task progress
 - capture explicit learning
 
@@ -52,30 +47,32 @@ Primary skills:
 - `$close-task`
 - `$learn`
 
-`$learn` may also run from the root when you want to review completed tasks and learn from their shared records and linked transcripts.
+`$learn` may also run from the root when you want to review completed tasks and learn from shared records and linked transcripts.
+
+### Entry
 
 Preferred entry:
 
-1. from the root, run `bin/xcode features/<feature-id>`
-2. if `bin/` is on your `PATH`, run `xcode features/<feature-id>`
+1. from the root, run `bin/xcode workstreams/<workstream-id>`
+2. if `bin/` is on your `PATH`, run `xcode <workstream-id>`
 3. any extra arguments are forwarded to `codex`
 
 The launcher enters the shared root first and then runs Codex with relative paths:
 
-- `-C "features/<feature-id>"`
+- `-C "workstreams/<workstream-id>"`
 - `--add-dir "."`
 
 ### Core Guidance
 
 - Root is the shared control plane.
-- `features/<feature-id>/` is the execution workspace for one feature branch.
-- Every task belongs to exactly one feature.
+- `workstreams/<workstream-id>/` is the execution directory for one workstream.
+- Every task belongs to exactly one workstream.
 - Root does not host task lifecycle.
-- `open-task` and `close-task` should be used only from inside a feature worktree.
-- `learn` may be used from either root or a feature worktree.
-- Shared long-lived material stays outside feature worktrees.
+- `open-task` and `close-task` should be used only from inside a workstream execution directory.
+- `learn` may be used from either root or a workstream execution directory.
+- Shared long-lived material stays outside execution directories.
 - `.tmp/` is a shared flat staging area.
-- `bin/xcode` is the standard launcher for feature sessions.
+- `bin/xcode` is the standard launcher for workstream sessions.
 
 ## Design Notes
 
@@ -84,23 +81,24 @@ The launcher enters the shared root first and then runs Codex with relative path
 ```text
 workspace/
 ├── bin/
-│   └── xcode                  # feature session launcher
-├── features/
-│   └── <feature-id>/          # git worktree
+│   └── xcode                      # workstream session launcher
+├── workstreams/
+│   └── <workstream-id>/           # repo worktree or daily execution directory
 ├── .tmp/
-├── .agents/skills/            # shared skill source for root + feature shells
-├── .codex/                    # root control-plane runtime
+├── .agents/skills/                # shared skill source for root + workstream shells
+├── .codex/                        # root control-plane runtime
 ├── .work/
-│   ├── features/
-│   │   └── <feature-id>/
-│   │       ├── feature.toml
-│   │       └── tasks/
-│   ├── specs/
-│   ├── dependencies/
+│   ├── workstreams/
+│   │   └── <workstream-id>/
+│   │       ├── workstream.toml
+│   │       ├── tasks/
+│   │       └── sessions/
+│   ├── docs/
 │   ├── catalog/
-│   ├── human-learning/
-│   └── project-manage/
-│       └── rule-candidates/
+│   ├── learning/
+│   │   ├── human/
+│   │   └── rule-candidates/
+│   └── state.toml
 ├── AGENTS.md
 ├── README.md
 └── project-local-exclude.example
@@ -110,101 +108,103 @@ workspace/
 
 The root shared layer owns all long-lived non-code state:
 
-- feature metadata
-- feature-scoped task records
-- shared specs
-- cross-feature dependency material
+- workstream metadata
+- workstream-scoped task records
+- workstream session registry files
+- shared docs
 - shared capability catalog
-- shared human-learning items
+- shared learning items
 - shared staged input
-- root project-manage state
+- root runtime state
 
-This makes paths stable and allows multiple feature branches to reference the same durable material.
+This makes paths stable and allows multiple workstreams to reference the same durable material.
 
-### Feature Worktrees
+### Workstreams
 
-Each feature is exactly one:
+Each workstream is typed.
 
-- feature id
-- branch
-- git worktree
+Supported types in this baseline:
 
-The worktree under `features/<feature-id>/` is the execution space for that feature.
-In shared metadata, keep the worktree path relative to the shared root:
+- `repo`
+- `daily`
 
-- `features/<feature-id>`
+Every workstream gets:
 
-The standard way to enter that execution space is:
+- one workstream id
+- one execution directory under `workstreams/`
+- one shared metadata bucket under `.work/workstreams/`
 
-- `bin/xcode features/<feature-id>`
-- or `xcode features/<feature-id>` when `bin/` is on `PATH`
+For `repo` workstreams:
 
-That launcher keeps the Codex-facing paths relative by running from the shared root and using:
+- the execution directory is a git worktree
+- metadata also records `branch` and `base_branch`
 
-- `-C "features/<feature-id>"`
-- `--add-dir "."`
+For `daily` workstreams:
 
-It should contain a local runtime shell because Codex discovers runtime instructions and repo skills from the current working root:
+- the execution directory is a plain local directory
+- no git worktree is required
 
-- `AGENTS.md`
-- `.agents/skills/`
-- `.codex/`
+In shared metadata, keep the execution path relative to the shared root:
 
-Shared skills should be exposed into each feature worktree through local discoverable entries that point back to the shared skill source.
+- `workstreams/<workstream-id>`
 
-### Feature Metadata And Tasks
+### Workstream Metadata And Tasks
 
-Shared feature metadata lives at:
+Shared workstream metadata lives at:
 
-- `.work/features/<feature-id>/feature.toml`
+- `.work/workstreams/<workstream-id>/workstream.toml`
 
-Shared feature tasks live at:
+Shared workstream tasks live at:
 
-- `.work/features/<feature-id>/tasks/YYYY-MM-DD-task-slug.md`
+- `.work/workstreams/<workstream-id>/tasks/YYYY-MM-DD-task-slug.md`
+
+Shared workstream session identity lives at:
+
+- `.work/workstreams/<workstream-id>/sessions/<session-id>.toml`
 
 This split is deliberate:
 
-- task lifecycle happens inside the feature worktree
+- task lifecycle happens inside the workstream execution directory
 - durable task truth lives in the shared root layer
+- session naming and retrieval use the shared workstream session registry
 
-That gives you isolated execution with shared long-term records.
-
-Feature metadata should keep lifecycle status explicit. Suggested statuses are:
+Workstream metadata should keep lifecycle status explicit. Supported statuses are:
 
 - `active`
 - `blocked`
-- `merged`
+- `completed`
 - `abandoned`
 - `archived`
 
-Closing or archiving a feature should update `feature.toml`. It should not delete the shared feature record or shared task history.
+Closing or archiving a workstream should update `workstream.toml`. It should not delete the shared workstream record, task history, or session registry.
 
 ### Runtime And Capability Management
 
-`$project-manage` owns:
+`$workstream-manage` owns:
 
-- feature creation
-- branch/worktree creation
+- workstream creation
+- repo branch/worktree creation
+- daily execution directory creation
 - root capability inspection
 - root capability installation and repair
-- feature/worktree explanation
+- workstream explanation
+- workstream close/archive lifecycle
 
 It does not own task execution.
-It is a root-only skill and should refuse to run from inside a feature worktree.
 
-It does own feature lifecycle, including feature closure and archive state.
+It is a root-only skill and should refuse to run from inside a workstream execution directory.
 
 ### Task Lifecycle
 
-`$open-task` and `$close-task` are feature-worktree-only skills.
+`$open-task` and `$close-task` are workstream-execution-only skills.
 
 They should:
 
-- determine the current feature from the current path
+- determine the current workstream from the current path
 - resolve the matching shared task directory
-- read and write only that feature’s tasks
+- read and write only that workstream’s tasks
 - refuse to operate when started from root
-- refuse to operate on a task that belongs to a different feature
+- refuse to operate on a task that belongs to a different workstream
 
 Task metadata also keeps:
 
@@ -213,6 +213,26 @@ Task metadata also keeps:
 - session references
 
 This allows root-side learning to work from completed tasks without guessing blindly.
+
+### Session Identity
+
+This kit does not rely on Codex native thread naming as the primary mechanism.
+
+Instead, it keeps a lightweight per-workstream session registry:
+
+- `.work/workstreams/<workstream-id>/sessions/<session-id>.toml`
+
+Each session record should keep:
+
+- `session_id`
+- `workstream_id`
+- `task_id`
+- `label`
+- `started_at`
+- `updated_at`
+- `execution_path`
+
+The label is derived from workstream and task identity rather than being manually named.
 
 ### Shared Staging
 
@@ -227,24 +247,26 @@ Use it for:
 
 Do not treat it as durable knowledge, and do not proactively scan it.
 
-### Human Learning And Catalog
+### Shared Docs, Learning, And Catalog
 
-Human-learning items and catalog items remain shared at root:
+Shared reference material, learning material, and catalog items remain at root:
 
-- `.work/human-learning/`
+- `.work/docs/`
+- `.work/learning/`
 - `.work/catalog/`
 
-This keeps reusable knowledge from fragmenting across feature branches.
+This keeps reusable knowledge and reviewable learning from fragmenting across workstreams.
 
 ### Root-Side Learning
 
-`$learn` may run at root when you want to learn from completed feature work after the implementation session is over.
+`$learn` may run at root when you want to learn from completed workstream work after the execution session is over.
 
 In that mode it should:
 
 - select a completed task that is still pending learning
 - read the task record first
-- resolve related transcripts from the Codex session store using task-linked session refs when available
+- resolve related transcripts from the Codex session store using task-linked session refs first
+- consult the shared session registry for labels and context
 - fall back to inferred session candidates only when explicit links are missing
 - write outputs to shared durable locations
 
@@ -252,16 +274,16 @@ Possible outputs are:
 
 - a learned skill
 - a human-learning item
-- a project rule candidate
+- a workstream rule candidate
 
 ### Git Recommendation
 
 This repository tracks the baseline because it is the maintained source template.
 
-In a real project checkout:
+In a real workspace checkout:
 
-- use [project-local-exclude.example](project-local-exclude.example) for the root control plane
-- let `$project-manage` provision each feature worktree's local ignore rules for:
+- use `project-local-exclude.example` for the shared root
+- let `$workstream-manage` provision each workstream execution directory's local ignore rules for:
   - `/AGENTS.md`
   - `/.agents/`
   - `/.codex/`
