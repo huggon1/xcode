@@ -18,6 +18,35 @@ This skill supports two learning outputs:
 
 Use this skill only when the user explicitly asks to learn, capture a lesson, save a pattern, or reflect on personal improvement.
 
+## Interaction Model
+
+- If invoked with no instruction:
+  - enter guided learning triage
+  - explain the possible outputs
+  - recommend the most likely learning direction from the current context
+- If invoked with an in-scope instruction:
+  - use that instruction to bias the verdict toward skill, human item, both, or evaluation
+- If the instruction is out of scope:
+  - say so clearly
+  - point to the better skill
+  - do not silently switch
+
+## In Scope
+
+- evaluate whether recent work is worth preserving
+- save a learned skill
+- save a human-improvement item
+- save both when both are genuinely useful
+
+## Out Of Scope
+
+Do not use this skill to:
+
+- close a task
+- install or enable runtime capabilities
+- write project config
+- act as an automatic background observer
+
 ## Output Verdicts
 
 Choose exactly one verdict before writing:
@@ -30,6 +59,11 @@ Choose exactly one verdict before writing:
 ## Workflow
 
 1. Identify the learning source:
+   - if the request is clearly out of scope:
+     - explain the boundary briefly
+     - point to the better skill
+     - stop without writing
+   - if there is no instruction, enter guided learning triage
    - the current task file
    - the recent task outcome
    - the current conversation
@@ -43,6 +77,7 @@ Choose exactly one verdict before writing:
    - `.work/catalog/validated/skills/`
    - `.agents/skills/`
    - `.work/human-learning/items/` when a human item is plausible
+   - prefer `.agents/skills/_shared/scripts/task_records.py read` or `.agents/skills/_shared/scripts/human_learning.py list/read` when `python3` is available and a metadata-first read is enough
 4. Decide the verdict:
    - `save-skill` for a reusable project pattern
    - `save-human-item` for a private human improvement topic
@@ -56,14 +91,17 @@ Choose exactly one verdict before writing:
    - do not auto-install it into `.agents/skills/` unless the user explicitly asks
 6. For a human item:
    - create or update `.work/human-learning/items/<id>.md`
-   - use YAML frontmatter with:
+   - use TOML frontmatter with:
      - `id`
      - `status`
      - `created`
      - `updated`
      - `success_streak`
      - `retire_after`
+     - `scope`
      - `tags`
+     - `applies_to`
+     - `summary`
    - default:
      - `status: active`
      - `success_streak: 0`
@@ -76,6 +114,8 @@ Choose exactly one verdict before writing:
      - `## Success Signals`
      - `## Failure Signals`
      - `## Notes`
+   - prefer `.agents/skills/_shared/scripts/human_learning.py upsert` for writes when `python3` is available
+   - if the helper is unavailable, write the file manually using the same contract
 7. If there is clear overlap:
    - prefer updating the existing learned skill or human item
    - do not create duplicates
@@ -95,4 +135,5 @@ Choose exactly one verdict before writing:
 - Human items are private by default.
 - Do not create or update project runtime config from this skill.
 - Do not install a learned skill unless the user explicitly asks.
+- Prefer helper-assisted reads and writes when available; fall back to manual edits only when needed.
 - If the right answer is `drop`, explain why and do not write files.

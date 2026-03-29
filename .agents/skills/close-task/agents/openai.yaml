@@ -1,6 +1,6 @@
 interface:
   display_name: "Close Task"
   short_description: "Update and close out a task record"
-  default_prompt: "Close out a task for the current project: collect the session outcome, optionally do a brief review against relevant human-learning items, preview the updates, then write them after confirmation."
+  default_prompt: "Close out a task for the current project. If no instruction is given, enter a guided closing flow and ask for only the minimum closure details. If an in-scope instruction is given, use it to bias the result toward done, blocked, paused, or dropped, then preview the update and write only after confirmation."
 policy:
   allow_implicit_invocation: false

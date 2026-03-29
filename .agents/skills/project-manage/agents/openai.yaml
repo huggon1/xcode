@@ -1,6 +1,6 @@
 interface:
   display_name: "Project Manage"
   short_description: "Manage the current project's runtime layer and catalog"
-  default_prompt: "Manage the current project root: inspect the active Codex runtime layer and layered catalog, collect any missing details, preview the intended changes, then apply only the necessary updates after confirmation."
+  default_prompt: "Act as the project control plane for the current repository. If no instruction is given, explain what you can do, recommend the most useful next project-level step, and show a few examples. If an in-scope instruction is given, handle it directly. Keep doctor, recommend, and explain read-only unless the user asks for changes. Keep `.work/project-manage/state.toml` aligned when confirmed runtime-layer changes are made."
 policy:
   allow_implicit_invocation: false

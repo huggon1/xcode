@@ -14,7 +14,9 @@ Keep one improvement topic per file.
 
 ## Item Metadata
 
-Each item should use YAML frontmatter with:
+Each item should use TOML frontmatter delimited by `+++`.
+
+Use these metadata fields:
 
 - `id`
 - `status`
@@ -22,12 +24,21 @@ Each item should use YAML frontmatter with:
 - `updated`
 - `success_streak`
 - `retire_after`
+- `scope`
 - `tags`
+- `applies_to`
+- `summary`
 
 Allowed `status` values:
 
 - `active`
 - `delete`
+
+Keep the frontmatter flat:
+
+- scalars
+- integers
+- arrays of strings
 
 ## Section Order
 
@@ -49,8 +60,18 @@ Use this section order:
 - When an item has been handled well enough times, the model may ask whether to set `status: delete`.
 - Do not physically delete files automatically as part of the baseline workflow.
 
+## Managed Update Surface
+
+The internal helper layer may update these parts directly:
+
+- all frontmatter fields
+- canonical section skeletons when an item is first created
+
+`$close-task` should only adjust metadata and streak state. It should not rewrite the main narrative sections.
+
 ## Workflow
 
 - Use `$learn` to create or update human-learning items explicitly.
 - `$close-task` may update existing active items when they are clearly relevant.
+- Use [.agents/skills/_shared/scripts/human_learning.py](/home/duu/code/mycodex/workspace/.agents/skills/_shared/scripts/human_learning.py) behind those skills when structured reads or metadata-only updates are enough.
 - Human-learning items are private working material, not active runtime capabilities.

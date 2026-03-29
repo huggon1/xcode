@@ -1,6 +1,6 @@
 interface:
   display_name: "Open Task"
   short_description: "Start or resume a task record"
-  default_prompt: "Open a task for the current project: find or create the right task record in .work/tasks, preview the intended change, and update it after confirmation."
+  default_prompt: "Open a task for the current project. If no instruction is given, explain whether creating a task or resuming one looks more likely and show examples. If an in-scope instruction is given, create, resume, or normalize the task record directly, preview the intended change, and update it after confirmation."
 policy:
   allow_implicit_invocation: false

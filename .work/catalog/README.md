@@ -79,10 +79,13 @@ It should record:
 - `notes`
 
 It does not track the baseline workflow skills that ship with this root.
+It also does not track the control-plane state owned by `$project-manage`.
 
 ## Runtime Relationship
 
 Catalog items are source material.
+
+Catalog metadata stays in sidecar YAML files. This directory does not use frontmatter.
 
 They become active only when intentionally materialized into standard root locations:
 
@@ -92,6 +95,10 @@ They become active only when intentionally materialized into standard root locat
 - `.codex/rules/`
 
 MCP items should be installed into `.codex/config.toml` as managed `[mcp_servers.<id>]` blocks.
+
+Minimal project runtime state lives separately in:
+
+- `.work/project-manage/state.toml`
 
 ## Workflow
 
